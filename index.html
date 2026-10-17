@@ -82,6 +82,12 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
 .corner,.lab{position:sticky;left:0;z-index:2;background:var(--surface)}
 .lab{display:flex;align-items:center;gap:8px;height:var(--cell-h);padding:0 10px 0 14px;border:0;font:inherit;font-size:13px;font-weight:600;color:var(--ink);text-align:left;cursor:pointer;white-space:nowrap}
 .lab .sw{width:10px;height:10px;flex:none;border-radius:3px;background:var(--lc)}
+.lab{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.lab.dragging{opacity:.3}
+.drag-ghost{position:fixed;z-index:40;display:flex;align-items:center;gap:8px;padding:0 10px 0 14px;border-radius:10px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;white-space:nowrap;box-shadow:0 10px 28px rgba(10,16,24,.35),inset 0 0 0 2px var(--lc);pointer-events:none}
+.drag-ghost .sw{width:10px;height:10px;flex:none;border-radius:3px;background:var(--lc)}
+.drop-line{position:fixed;z-index:39;height:3px;border-radius:2px;background:var(--ink);pointer-events:none}
+.drag-ghost[hidden],.drop-line[hidden]{display:none}
 .lab .txt{display:flex;flex-direction:column;min-width:0;line-height:1.15}
 .lab .name,.lab .snd-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lab .snd-name{font-size:10.5px;font-weight:400;color:var(--muted);margin-top:2px}
@@ -133,7 +139,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
 .snd:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 
 .pop-remove{width:100%;margin-top:6px}
-.pop-remove[hidden]{display:none}
+.pop-remove.armed{background:var(--c-kick);border-color:transparent;color:#fff}
 
 .add-row{grid-column:1 / -1;padding-top:4px}
 .add-btn{position:sticky;left:8px;display:inline-flex;align-items:center;gap:8px;height:var(--cell-h);margin-left:8px;padding:0 16px 0 8px;border:1.5px dashed var(--muted);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
@@ -228,7 +234,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     <div class="scroller"><div class="grid" id="grid" role="group" aria-label="Sound timeline"></div></div>
   </section>
 
-  <p class="hint">Tap a square to place a sound and tap it again to remove it. On tracks that show note names, drag a placed block up or down to change its note. Tap a track name to choose its sound, mute it or clear it. Tap Add track under the timeline for more instruments. The space bar plays and stops.</p>
+  <p class="hint">Tap a square to place a sound and tap it again to remove it. On tracks that show note names, drag a placed block up or down to change its note. Tap a track name to choose its sound, mute, clear or remove it; hold the name and drag to move the track. Tap Add track under the timeline for more instruments. The space bar plays and stops.</p>
 </main>
 
 <div class="pop" id="pop" role="dialog" aria-labelledby="popTitle" hidden>
@@ -238,7 +244,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     <button class="btn" type="button" id="popMute" aria-pressed="false">Mute</button>
     <button class="btn" type="button" id="popClear">Clear track</button>
   </div>
-  <button class="btn pop-remove" type="button" id="popRemove" hidden>Remove track</button>
+  <button class="btn pop-remove" type="button" id="popRemove">Remove track</button>
 </div>
 
 <dialog class="picker" id="picker" aria-labelledby="pickerTitle">
@@ -254,24 +260,24 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
 <script>
 (() => {
   /* ---------- tracks and their sounds ---------- */
-  // the built-in tracks, always shown
+  // the tracks a new loop starts with
   const CORE = [
-    { id:'lead',  name:'Lead',     mel:true, oct:4, def:5, sounds:[['square','Square'],['saw','Saw'],['soft','Soft']] },
-    { id:'keys',  name:'Keys',     mel:true, oct:4, def:2, sounds:[['bell','Bell'],['epiano','E-piano'],['marimba','Marimba']] },
-    { id:'pluck', name:'Pluck',    mel:true, oct:4, def:4, sounds:[['pluck','Pluck'],['harp','Harp'],['stab','Stab']] },
-    { id:'chord', name:'Chords',   mel:true, chord:true, oct:3, def:0, sounds:[['pad','Pad'],['organ','Organ'],['stab','Stab']] },
-    { id:'vox',   name:'Voice',    mel:true, oct:3, def:2, sounds:[['aah','Aah'],['ooh','Ooh'],['choir','Choir']] },
-    { id:'bass',  name:'Bass',     mel:true, oct:2, def:0, sounds:[['saw','Saw'],['acid','Acid'],['reese','Reese'],['sub','Sub'],['rubber','Rubber']] },
-    { id:'mega',  name:'Mega bass', mel:true, oct:2, def:0, sounds:[['wobble','Wobble'],['growl','Growl'],['hoover','Hoover'],['donk','Donk']] },
-    { id:'low',   name:'808',      mel:true, oct:1, def:0, sounds:[['long','Long'],['short','Short'],['dist','Distorted'],['boom','Boom']] },
-    { id:'fx',    name:'FX',       sounds:[['riser','Riser'],['impact','Impact'],['crash','Crash'],['horn','Air horn']] },
-    { id:'ohat',  name:'Open hat', sounds:[['open','Open'],['metal','Metal'],['sizzle','Sizzle']] },
-    { id:'hat',   name:'Hi-hat',   sounds:[['closed','Closed'],['tight','Tight'],['metal','Metal']] },
-    { id:'perc',  name:'Perc',     sounds:[['rim','Rim'],['cowbell','Cowbell'],['conga','Conga'],['shaker','Shaker'],['clave','Clave']] },
-    { id:'clap',  name:'Clap',     sounds:[['clap','Clap'],['snap','Snap']] },
-    { id:'snare', name:'Snare',    sounds:[['classic','Classic'],['tight','Tight'],['noisy','Noisy']] },
-    { id:'tom',   name:'Tom',      sounds:[['low','Low'],['high','High'],['laser','Laser']] },
-    { id:'kick',  name:'Kick',     sounds:[['punchy','Punchy'],['deep','Deep'],['soft','Soft'],['mega','Mega']] },
+    { id:'lead',  name:'Lead', cat:'Synths',     mel:true, oct:4, def:5, sounds:[['square','Square'],['saw','Saw'],['soft','Soft']] },
+    { id:'keys',  name:'Keys', cat:'Keys & strings',     mel:true, oct:4, def:2, sounds:[['bell','Bell'],['epiano','E-piano'],['marimba','Marimba']] },
+    { id:'pluck', name:'Pluck', cat:'Synths',    mel:true, oct:4, def:4, sounds:[['pluck','Pluck'],['harp','Harp'],['stab','Stab']] },
+    { id:'chord', name:'Chords', cat:'Keys & strings',   mel:true, chord:true, oct:3, def:0, sounds:[['pad','Pad'],['organ','Organ'],['stab','Stab']] },
+    { id:'vox',   name:'Voice', cat:'Brass, wind & voices',    mel:true, oct:3, def:2, sounds:[['aah','Aah'],['ooh','Ooh'],['choir','Choir']] },
+    { id:'bass',  name:'Bass', cat:'Bass',     mel:true, oct:2, def:0, sounds:[['saw','Saw'],['acid','Acid'],['reese','Reese'],['sub','Sub'],['rubber','Rubber']] },
+    { id:'mega',  name:'Mega bass', cat:'Bass', mel:true, oct:2, def:0, sounds:[['wobble','Wobble'],['growl','Growl'],['hoover','Hoover'],['donk','Donk']] },
+    { id:'low',   name:'808', cat:'Bass',      mel:true, oct:1, def:0, sounds:[['long','Long'],['short','Short'],['dist','Distorted'],['boom','Boom']] },
+    { id:'fx',    name:'FX', cat:'Fun & FX',       sounds:[['riser','Riser'],['impact','Impact'],['crash','Crash'],['horn','Air horn']] },
+    { id:'ohat',  name:'Open hat', cat:'Drums & percussion', sounds:[['open','Open'],['metal','Metal'],['sizzle','Sizzle']] },
+    { id:'hat',   name:'Hi-hat', cat:'Drums & percussion',   sounds:[['closed','Closed'],['tight','Tight'],['metal','Metal']] },
+    { id:'perc',  name:'Perc', cat:'Drums & percussion',     sounds:[['rim','Rim'],['cowbell','Cowbell'],['conga','Conga'],['shaker','Shaker'],['clave','Clave']] },
+    { id:'clap',  name:'Clap', cat:'Drums & percussion',     sounds:[['clap','Clap'],['snap','Snap']] },
+    { id:'snare', name:'Snare', cat:'Drums & percussion',    sounds:[['classic','Classic'],['tight','Tight'],['noisy','Noisy']] },
+    { id:'tom',   name:'Tom', cat:'Drums & percussion',      sounds:[['low','Low'],['high','High'],['laser','Laser']] },
+    { id:'kick',  name:'Kick', cat:'Drums & percussion',     sounds:[['punchy','Punchy'],['deep','Deep'],['soft','Soft'],['mega','Mega']] },
   ];
   // more tracks to add with "Add track" under the timeline; role guides what Random loop writes for them
   const EXTRA = [
@@ -281,8 +287,8 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     { id:'mallets',   name:'Mallets',     cat:'Keys & strings',     color:'#D9822B', mel:true, oct:4, def:2, role:'melody', sounds:[['xylo','Xylophone'],['steel','Steel drum'],['kalimba','Kalimba']] },
     { id:'guitar',    name:'Guitar',      cat:'Keys & strings',     color:'#B8662E', mel:true, oct:3, def:4, role:'melody', sounds:[['clean','Clean'],['muted','Muted'],['power','Power chord']], hold:{ power:4 } },
     { id:'harmonica', name:'Harmonica',   cat:'Keys & strings',     color:'#7F8A2A', mel:true, oct:4, def:2, role:'melody', detached:true, sounds:[['harmonica','Harmonica'],['accordion','Accordion'],['melodica','Melodica']], hold:{ harmonica:4, accordion:4, melodica:4 } },
-    { id:'brass',     name:'Brass',       cat:'Brass & wind',       color:'#C99A12', mel:true, oct:3, def:4, role:'melody', detached:true, sounds:[['trumpet','Trumpet'],['section','Section'],['tuba','Tuba']], hold:{ trumpet:4, section:4, tuba:4 } },
-    { id:'flute',     name:'Flute',       cat:'Brass & wind',       color:'#2E9CB0', mel:true, oct:4, def:4, role:'melody', detached:true, sounds:[['flute','Flute'],['panpipes','Pan pipes'],['whistle','Whistle']], hold:{ flute:4, panpipes:4, whistle:4 } },
+    { id:'brass',     name:'Brass',       cat:'Brass, wind & voices',       color:'#C99A12', mel:true, oct:3, def:4, role:'melody', detached:true, sounds:[['trumpet','Trumpet'],['section','Section'],['tuba','Tuba']], hold:{ trumpet:4, section:4, tuba:4 } },
+    { id:'flute',     name:'Flute',       cat:'Brass, wind & voices',       color:'#2E9CB0', mel:true, oct:4, def:4, role:'melody', detached:true, sounds:[['flute','Flute'],['panpipes','Pan pipes'],['whistle','Whistle']], hold:{ flute:4, panpipes:4, whistle:4 } },
     { id:'supersaw',  name:'Supersaw',    cat:'Synths',             color:'#7352E0', mel:true, oct:4, def:4, role:'melody', detached:true, sounds:[['trance','Trance'],['pluck','Pluck'],['hyper','Hyper']], hold:{ trance:4, hyper:4 } },
     { id:'arp',       name:'Arp',         cat:'Synths',             color:'#2D86D9', mel:true, chord:true, oct:3, def:0, role:'chord', sounds:[['up','Up'],['down','Down'],['bounce','Bounce']], hold:{ up:16, down:16, bounce:16 } },
     { id:'chip',      name:'8-bit',       cat:'Synths',             color:'#47A23F', mel:true, oct:4, def:4, role:'melody', detached:true, sounds:[['square','Square'],['pulse','Pulse'],['triangle','Triangle']], hold:{ square:2, pulse:2, triangle:2 } },
@@ -303,9 +309,9 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
   ];
   const TYPES = CORE.concat(EXTRA);
   const BY = Object.fromEntries(TYPES.map(l => [l.id, l]));
-  // the tracks on screen: the built-in ones, then any added, in the order they were added
+  // the tracks on screen, in the order shown; any track can be removed, added back or moved
   let LANES = CORE;
-  const setLanes = () => { LANES = CORE.concat(state.extra.map(id => BY[id])); };
+  const setLanes = () => { LANES = state.order.map(id => BY[id]); };
   const laneColor = lane => lane.color || `var(--c-${lane.id})`;
   const MAX = 64, MAXDEG = 14, STORE = 'loopline-v1';
   const SCALES = {
@@ -434,7 +440,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
   const defaultSounds = () => Object.fromEntries(TYPES.map(l => [l.id, l.sounds[0][0]]));
   const state = {
     tempo:96, swing:0, key:9, scale:'minpent', bars:2,
-    cells:{}, sounds:defaultSounds(), muted:{}, extra:[], playing:false,
+    cells:{}, sounds:defaultSounds(), muted:{}, order:CORE.map(l => l.id), playing:false,
   };
   const lastDeg = {};
   TYPES.forEach(l => { state.cells[l.id] = new Array(MAX).fill(-1); });
@@ -464,7 +470,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
       try {
         localStorage.setItem(STORE, JSON.stringify({
           tempo:state.tempo, swing:state.swing, key:state.key, scale:state.scale, bars:state.bars,
-          cells:state.cells, sounds:state.sounds, muted:state.muted, extra:state.extra
+          cells:state.cells, sounds:state.sounds, muted:state.muted, order:state.order
         }));
       } catch (e) {}
     }, 250);
@@ -487,7 +493,9 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
         state.sounds[l.id] = l.sounds.some(s => s[0] === snd[l.id]) ? snd[l.id] : l.sounds[0][0];
       });
       state.muted = d.muted && typeof d.muted === 'object' ? d.muted : {};
-      state.extra = Array.isArray(d.extra) ? [...new Set(d.extra)].filter(id => EXTRA.some(t => t.id === id)) : [];
+      // saves from before tracks could be moved list only the added ones, after the built-in tracks
+      const order = Array.isArray(d.order) ? d.order : CORE.map(l => l.id).concat(Array.isArray(d.extra) ? d.extra : []);
+      state.order = [...new Set(order)].filter(id => BY[id]);
       setLanes();
       return true;
     } catch (e) { return false; }
@@ -1431,7 +1439,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     colEls = Array.from({ length:L }, () => []); rulEls = []; cellEls = {}; labEls = {};
     drawn = -1;
     focusStep = Math.min(focusStep, L - 1);
-    focusLane = Math.min(focusLane, LANES.length - 1);
+    focusLane = Math.max(0, Math.min(focusLane, LANES.length - 1));
     const frag = document.createDocumentFragment();
     const corner = document.createElement('div'); corner.className = 'corner'; frag.appendChild(corner);
     for (let s = 0; s < L; s++){
@@ -1566,6 +1574,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
   grid.addEventListener('click', e => {
     if (e.target.closest('.add-btn')){ openPicker(); return; }
     const lab = e.target.closest('.lab');
+    if (lab && suppressClick){ suppressClick = false; return; }
     if (lab){
       const lane = BY[lab.dataset.lane];
       if (popLane === lane) closePop(false); else openPop(lane);
@@ -1579,6 +1588,13 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     }
   });
   grid.addEventListener('keydown', e => {
+    const lab = e.target.closest('.lab');
+    if (lab && e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')){
+      e.preventDefault();
+      const lane = BY[lab.dataset.lane], from = state.order.indexOf(lane.id);
+      moveTrack(lane, clamp(from + (e.key === 'ArrowUp' ? -1 : 1), 0, state.order.length - 1));
+      return;
+    }
     const c = e.target.closest('.cell');
     if (!c) return;
     const lane = BY[c.dataset.lane], li = LANES.indexOf(lane), s = +c.dataset.step, L = len();
@@ -1597,6 +1613,98 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     }
   });
 
+  /* ---------- move tracks: drag a track name (mouse), or hold it and drag (touch) ---------- */
+  // Touch needs the hold so that a swipe across the names still scrolls the page.
+  const ghost = document.createElement('div'), dropLine = document.createElement('div');
+  ghost.className = 'drag-ghost'; dropLine.className = 'drop-line';
+  ghost.hidden = dropLine.hidden = true;
+  document.body.append(ghost, dropLine);
+  let mover = null, suppressClick = false;
+
+  function moveTrack(lane, to){
+    const from = state.order.indexOf(lane.id);
+    if (to !== from){
+      state.order.splice(from, 1); state.order.splice(to, 0, lane.id);
+      setLanes(); buildGrid(); fitGrid(); save();
+    }
+    labEls[lane.id].focus({ preventScroll:true });
+  }
+  // where the dragged track would land: before the first row whose middle is below the finger
+  function dropSlot(y){
+    const i = LANES.findIndex(l => { const b = labEls[l.id].getBoundingClientRect(); return y < b.top + b.height / 2; });
+    return i < 0 ? LANES.length : i;
+  }
+  function showMove(){
+    const m = mover, slot = dropSlot(m.y), from = LANES.indexOf(m.lane);
+    m.slot = slot;
+    const lb = m.lab.getBoundingClientRect();
+    ghost.style.top = (m.y - lb.height / 2) + 'px'; ghost.style.left = lb.left + 'px';
+    ghost.style.width = lb.width + 'px'; ghost.style.height = lb.height + 'px';
+    dropLine.hidden = slot === from || slot === from + 1;
+    if (!dropLine.hidden){
+      const sc = grid.parentElement.getBoundingClientRect();
+      const row = labEls[LANES[Math.min(slot, LANES.length - 1)].id].getBoundingClientRect();
+      dropLine.style.top = ((slot < LANES.length ? row.top - 2 : row.bottom + 2) - 1.5) + 'px';
+      dropLine.style.left = (sc.left + 6) + 'px'; dropLine.style.width = (sc.width - 12) + 'px';
+    }
+  }
+  // scroll the page while the finger is near the top or bottom edge
+  function edgeScroll(){
+    if (!mover || !mover.active) return;
+    const y = mover.y, edge = 70;
+    const v = y < edge ? -(edge - y) / 4 : y > innerHeight - edge ? (y - innerHeight + edge) / 4 : 0;
+    if (v){ window.scrollBy(0, v); showMove(); }
+    mover.raf = requestAnimationFrame(edgeScroll);
+  }
+  function startMove(){
+    const m = mover;
+    if (!m || m.active) return;
+    clearTimeout(m.timer); m.active = true; suppressClick = true;
+    closePop(false);
+    try { m.lab.setPointerCapture(m.id); } catch (e) {}
+    m.lab.classList.add('dragging');
+    const sw = document.createElement('span'); sw.className = 'sw';
+    ghost.replaceChildren(sw, document.createTextNode(m.lane.name));
+    ghost.style.setProperty('--lc', laneColor(m.lane));
+    ghost.hidden = false;
+    if (navigator.vibrate) navigator.vibrate(12);
+    showMove();
+    m.raf = requestAnimationFrame(edgeScroll);
+  }
+  grid.addEventListener('pointerdown', e => {
+    const lab = e.target.closest('.lab');
+    if (!lab || e.button > 0) return;
+    mover = { lane:BY[lab.dataset.lane], lab, id:e.pointerId, sx:e.clientX, sy:e.clientY, y:e.clientY, mouse:e.pointerType === 'mouse', active:false };
+    if (!mover.mouse) mover.timer = setTimeout(startMove, 320);
+  });
+  grid.addEventListener('pointermove', e => {
+    const m = mover;
+    if (!m || e.pointerId !== m.id) return;
+    m.y = e.clientY;
+    if (m.active){ showMove(); return; }
+    const dx = e.clientX - m.sx, dy = e.clientY - m.sy;
+    if (m.mouse){ if (Math.abs(dy) > 5) startMove(); }
+    else if (Math.hypot(dx, dy) > 8){ clearTimeout(m.timer); mover = null; } // moved before the hold: it's a scroll
+  });
+  const endMove = e => {
+    const m = mover;
+    if (!m || e.pointerId !== m.id) return;
+    mover = null;
+    clearTimeout(m.timer); cancelAnimationFrame(m.raf);
+    if (!m.active) return; // a plain tap: the click opens the track menu
+    m.lab.classList.remove('dragging');
+    ghost.hidden = dropLine.hidden = true;
+    setTimeout(() => { suppressClick = false; }, 60);
+    if (e.type === 'pointercancel') return;
+    const from = state.order.indexOf(m.lane.id);
+    moveTrack(m.lane, m.slot > from ? m.slot - 1 : m.slot);
+  };
+  grid.addEventListener('pointerup', endMove);
+  grid.addEventListener('pointercancel', endMove);
+  // once a move has started, stop the page scrolling under the finger
+  grid.addEventListener('touchmove', e => { if (mover && mover.active) e.preventDefault(); }, { passive:false });
+  grid.addEventListener('contextmenu', e => { if (e.target.closest('.lab')) e.preventDefault(); });
+
   /* ---------- track options popover ---------- */
   const pop = $('pop'), popTitle = $('popTitle'), popSounds = $('popSounds'), popMute = $('popMute'), popClear = $('popClear'), popRemove = $('popRemove');
   let popLane = null;
@@ -1605,7 +1713,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     popLane = lane;
     const lab = labEls[lane.id];
     pop.style.setProperty('--lc', laneColor(lane));
-    popRemove.hidden = !lane.cat;
+    popRemove.textContent = 'Remove track'; popRemove.classList.remove('armed');
     popTitle.textContent = lane.name;
     popSounds.innerHTML = '';
     lane.sounds.forEach(([id, name]) => {
@@ -1663,6 +1771,11 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
   popRemove.addEventListener('click', () => {
     if (!popLane) return;
     const lane = popLane;
+    // a track with notes on it asks for a second tap, so a stray tap can't wipe it
+    if (state.cells[lane.id].some(v => v >= 0) && !popRemove.classList.contains('armed')){
+      popRemove.textContent = 'Tap again to remove'; popRemove.classList.add('armed');
+      return;
+    }
     closePop(false); removeTrack(lane);
   });
   document.addEventListener('pointerdown', e => {
@@ -1674,13 +1787,13 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
 
   /* ---------- add a track ---------- */
   const picker = $('picker'), pickerBody = $('pickerBody');
-  [...new Set(EXTRA.map(t => t.cat))].forEach(cat => {
+  ['Drums & percussion', 'Bass', 'Keys & strings', 'Synths', 'Brass, wind & voices', 'Fun & FX'].forEach(cat => {
     const h = document.createElement('h3'); h.className = 'picker-cat'; h.textContent = cat;
     const wrap = document.createElement('div'); wrap.className = 'picker-grid';
-    EXTRA.filter(t => t.cat === cat).forEach(t => {
+    TYPES.filter(t => t.cat === cat).forEach(t => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'pick'; b.dataset.type = t.id;
-      b.style.setProperty('--lc', t.color);
+      b.style.setProperty('--lc', laneColor(t));
       b.innerHTML = `<span class="pick-name">${t.name}</span><span class="pick-snds">${t.sounds.map(x => x[1]).join(' · ')}</span><span class="pick-added">Added</span>`;
       wrap.appendChild(b);
     });
@@ -1689,7 +1802,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
   function openPicker(){
     closePop(false);
     pickerBody.querySelectorAll('.pick').forEach(b => {
-      const on = state.extra.includes(b.dataset.type);
+      const on = state.order.includes(b.dataset.type);
       b.disabled = on; b.classList.toggle('added', on);
     });
     if (picker.showModal) picker.showModal(); else picker.setAttribute('open', '');
@@ -1703,8 +1816,8 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
   $('pickerClose').addEventListener('click', closePicker);
   picker.addEventListener('click', e => { if (e.target === picker) closePicker(); }); // tap outside the panel
   function addTrack(id){
-    if (state.extra.includes(id)) return;
-    state.extra.push(id);
+    if (state.order.includes(id)) return;
+    state.order.push(id);
     setLanes(); buildGrid(); fitGrid(); save();
     const lane = BY[id], lab = labEls[id];
     lab.scrollIntoView({ block:'nearest', behavior:reduceMotion.matches ? 'auto' : 'smooth' });
@@ -1712,7 +1825,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     ensureAudio(); preview(lane, placeDeg(lane));
   }
   function removeTrack(lane){
-    state.extra = state.extra.filter(id => id !== lane.id);
+    state.order = state.order.filter(id => id !== lane.id);
     state.cells[lane.id].fill(-1);
     state.sounds[lane.id] = lane.sounds[0][0];
     delete state.muted[lane.id];
@@ -1757,6 +1870,8 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     Object.assign(state, { tempo:p.tempo, swing:p.swing, key:p.key, scale:p.scale, bars:p.bars });
     state.muted = {};
     state.sounds = Object.assign(defaultSounds(), p.s || {});
+    Object.keys(p.p).forEach(id => { if (!state.order.includes(id)) state.order.push(id); });
+    setLanes();
     TYPES.forEach(l => {
       const str = p.p[l.id] || '';
       state.cells[l.id] = Array.from({ length:MAX }, (_, i) => str ? parseCh(str[i % str.length]) : -1);
@@ -1807,14 +1922,15 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
       chord: () => pick([0,2,3,4,1]),
     };
     // keep it from getting muddy: one or two melody lines, usually one low end
+    const has = id => state.order.includes(id);
     const active = new Set(['kick', 'snare', 'hat']);
-    const MELODY = ['lead', 'keys', 'pluck', 'vox'];
+    const MELODY = ['lead', 'keys', 'pluck', 'vox'].filter(has);
     const tops = MELODY.filter(() => Math.random() < .4);
-    if (!tops.length) tops.push(pick(MELODY));
+    if (!tops.length && MELODY.length) tops.push(pick(MELODY));
     tops.forEach(t => active.add(t));
-    const r = Math.random();
-    if (r < .45) active.add('bass'); else if (r < .65) active.add('low'); else if (r < .9) active.add('mega');
-    else { active.add('bass'); active.add('low'); }
+    const r = Math.random(), lows = ['bass', 'low', 'mega'].filter(has);
+    const want = (r < .45 ? ['bass'] : r < .65 ? ['low'] : r < .9 ? ['mega'] : ['bass', 'low']).filter(has);
+    (want.length ? want : lows.length ? [pick(lows)] : []).forEach(id => active.add(id));
     ['chord', 'ohat', 'perc', 'clap', 'tom'].forEach(id => { if (Math.random() < .55) active.add(id); });
     LANES.filter(l => l.role).forEach(l => { if (Math.random() < .5) active.add(l.id); });
 
