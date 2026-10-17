@@ -85,6 +85,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
 .corner,.lab{position:sticky;left:0;z-index:2;background:var(--surface)}
 .lab{display:flex;align-items:center;gap:8px;height:var(--cell-h);padding:0 10px 0 14px;border:0;font:inherit;font-size:13px;font-weight:600;color:var(--ink);text-align:left;cursor:pointer;white-space:nowrap}
 .lab .sw{width:10px;height:10px;flex:none;border-radius:3px;background:var(--lc)}
+.lab .sw.num{width:15px;height:15px;border-radius:4px;display:grid;place-items:center;font-size:9.5px;font-weight:700;line-height:1;color:#fff}
 .lab{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .lab.dragging{opacity:.3}
 .drag-ghost{position:fixed;z-index:40;display:flex;align-items:center;gap:8px;padding:0 10px 0 14px;border-radius:10px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;white-space:nowrap;box-shadow:0 10px 28px rgba(10,16,24,.35),inset 0 0 0 2px var(--lc);pointer-events:none}
@@ -155,9 +156,20 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
 .picker[open]{display:flex;flex-direction:column}
 .picker::backdrop{background:rgba(8,12,18,.55)}
 .picker-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 14px 12px 18px;border-bottom:1px solid var(--line)}
-.picker-head h2{margin:0;font-size:18px;font-weight:700;letter-spacing:-0.01em}
+.picker-head h2{flex:1;margin:0;font-size:18px;font-weight:700;letter-spacing:-0.01em}
 .picker-close{width:38px;height:38px;flex:none;border:1px solid var(--line);border-radius:50%;background:var(--bg);color:var(--ink);display:grid;place-items:center;cursor:pointer}
-.picker-close svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
+.picker-close svg,.picker-back svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.picker-back{width:38px;height:38px;flex:none;border:1px solid var(--line);border-radius:50%;background:var(--bg);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.picker-back[hidden],.picker-detail[hidden],.picker-body[hidden]{display:none}
+.picker-detail{overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:14px;padding:16px 18px 20px}
+.pd-help,.pd-note{margin:0;font-size:13.5px;color:var(--muted)}
+.pd-sounds{display:grid;grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));gap:8px}
+.pd-snd{display:flex;align-items:center;gap:10px;min-height:54px;padding:0 14px 0 10px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font:inherit;font-size:14.5px;font-weight:600;text-align:left;cursor:pointer}
+.pd-snd svg{width:30px;height:30px;flex:none;padding:8px 7px 8px 9px;border-radius:50%;background:var(--lc);fill:#fff}
+.pd-snd[aria-pressed="true"]{border-color:var(--lc);box-shadow:inset 0 0 0 1.5px var(--lc)}
+.pd-snd:hover{border-color:var(--muted)}
+.pd-add{align-self:flex-start;height:46px;padding:0 24px;border:0;border-radius:999px;background:var(--lc);color:#fff;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.pd-snd:focus-visible,.pd-add:focus-visible,.picker-back:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .picker-body{overflow:auto;overscroll-behavior:contain;padding:4px 18px 18px}
 .picker-cat{margin:16px 0 8px;font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
 .picker-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(168px, 1fr));gap:8px}
@@ -167,9 +179,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
 .pick-name{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
 .pick-name::before{content:"";width:10px;height:10px;flex:none;border-radius:3px;background:var(--lc)}
 .pick-snds{font-size:11.5px;line-height:1.35;color:var(--muted)}
-.pick-added{display:none;font-size:11.5px;font-weight:600;color:var(--muted)}
-.pick.added{opacity:.55;cursor:default}
-.pick.added .pick-snds{display:none}
+.pick-added{display:none;margin-top:2px;font-size:11.5px;font-weight:600;color:var(--ink)}
 .pick.added .pick-added{display:block}
 
 .hint{margin:12px 4px 0;max-width:72ch;font-size:13px;color:var(--muted)}
@@ -238,7 +248,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     <div class="scroller"><div class="grid" id="grid" role="group" aria-label="Sound timeline"></div></div>
   </section>
 
-  <p class="hint">Tap a square to place a sound and tap it again to remove it. On tracks that show note names, drag a placed block up or down to change its note. Tap a track name to choose its sound, mute, clear or remove it; hold the name and drag to move the track. Tap Add track under the timeline for more instruments. The space bar plays and stops.</p>
+  <p class="hint">Tap a square to place a sound and tap it again to remove it. On tracks that show note names, drag a placed block up or down to change its note. Tap a track name to choose its sound, mute, clear or remove it; hold the name and drag to move the track. Tap Add track under the timeline for more instruments: you can try each sound before adding it, and add the same one more than once. The space bar plays and stops.</p>
 </main>
 
 <div class="pop" id="pop" role="dialog" aria-labelledby="popTitle" hidden>
@@ -253,12 +263,16 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
 
 <dialog class="picker" id="picker" aria-labelledby="pickerTitle">
   <div class="picker-head">
+    <button class="picker-back" type="button" id="pickerBack" aria-label="Back to all instruments" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
     <h2 id="pickerTitle">Add a track</h2>
     <button class="picker-close" type="button" id="pickerClose" aria-label="Close">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
   </div>
   <div class="picker-body" id="pickerBody"></div>
+  <div class="picker-detail" id="pickerDetail" hidden></div>
 </dialog>
 
 <script>
@@ -312,11 +326,22 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     { id:'bells',     name:'Bells',       cat:'Fun & FX',           color:'#9C7C2E', role:'fx', sounds:[['gong','Gong'],['church','Church bell'],['chimes','Wind chimes']] },
   ];
   const TYPES = CORE.concat(EXTRA);
+  TYPES.forEach(t => { t.type = t.id; });
   const BY = Object.fromEntries(TYPES.map(l => [l.id, l]));
+  // An instrument can be on the timeline more than once. The first copy's id is the instrument's own
+  // ('bass'); later copies are 'bass-2', 'bass-3', … and inherit everything but their id and name.
+  const INST = {};
+  function laneOf(id){
+    if (BY[id]) return BY[id];
+    if (INST[id]) return INST[id];
+    const m = /^([a-z0-9]+)-(\d+)$/.exec(id || ''), base = m && BY[m[1]];
+    if (!base || +m[2] < 2) return null;
+    return (INST[id] = Object.assign(Object.create(base), { id, num:+m[2], label:base.name, name:`${base.name} ${m[2]}` }));
+  }
   // the tracks on screen, in the order shown; any track can be removed, added back or moved
   let LANES = CORE;
-  const setLanes = () => { LANES = state.order.map(id => BY[id]); };
-  const laneColor = lane => lane.color || `var(--c-${lane.id})`;
+  const setLanes = () => { LANES = state.order.map(laneOf); };
+  const laneColor = lane => lane.color || `var(--c-${lane.type})`;
   const MAX = 64, MAXDEG = 14, STORE = 'loopline-v1';
   const SCALES = {
     minpent:{ name:'Minor pentatonic', s:[0,3,5,7,10] },
@@ -492,15 +517,15 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
       state.scale = SCALES[d.scale] ? d.scale : 'minpent';
       state.bars = [1,2,4].includes(d.bars) ? d.bars : 2;
       const snd = d.sounds && typeof d.sounds === 'object' ? d.sounds : {};
-      TYPES.forEach(l => {
+      // saves from before tracks could be moved list only the added ones, after the built-in tracks
+      const order = Array.isArray(d.order) ? d.order : CORE.map(l => l.id).concat(Array.isArray(d.extra) ? d.extra : []);
+      state.order = [...new Set(order)].filter(id => laneOf(id));
+      [...new Set(TYPES.map(t => t.id).concat(state.order))].map(laneOf).forEach(l => {
         const a = Array.isArray(d.cells[l.id]) ? d.cells[l.id] : [];
         state.cells[l.id] = Array.from({length:MAX}, (_, i) => Number.isInteger(a[i]) ? clamp(a[i], -1, MAXDEG) : -1);
         state.sounds[l.id] = l.sounds.some(s => s[0] === snd[l.id]) ? snd[l.id] : l.sounds[0][0];
       });
       state.muted = d.muted && typeof d.muted === 'object' ? d.muted : {};
-      // saves from before tracks could be moved list only the added ones, after the built-in tracks
-      const order = Array.isArray(d.order) ? d.order : CORE.map(l => l.id).concat(Array.isArray(d.extra) ? d.extra : []);
-      state.order = [...new Set(order)].filter(id => BY[id]);
       setLanes();
       return true;
     } catch (e) { return false; }
@@ -1338,9 +1363,9 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     },
   });
 
-  function trigger(lane, v, t, dur, vel){
+  function trigger(lane, v, t, dur, vel, snd){
     if (!ctx) return;
-    const set = V[lane.id], fn = set[state.sounds[lane.id]] || set[lane.sounds[0][0]];
+    const set = V[lane.type], fn = set[snd || state.sounds[lane.id]] || set[lane.sounds[0][0]];
     if (lane.chord) fn(t, [0, 2, 4].map(i => hz(midi(lane, v + i))), dur, vel);
     else if (lane.mel) fn(t, hz(midi(lane, v)), dur, vel);
     else fn(t, vel, dur);
@@ -1348,6 +1373,13 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
   function preview(lane, v){
     if (!ctx) return;
     trigger(lane, v, ctx.currentTime + 0.01, stepDur() * 2, 0.9);
+  }
+  function audition(type, snd){
+    ensureAudio();
+    if (!ctx) return;
+    const t0 = ctx.currentTime + 0.03, sd = stepDur();
+    if (type.mel && !type.chord) [0, 2, 4].forEach((d, i) => trigger(type, type.def + d, t0 + i * sd * 3, sd * 3 * 0.92, 0.9, snd));
+    else trigger(type, type.mel ? type.def : 0, t0, sd * 4, 0.9, snd);
   }
   function stepsUntilNext(arr, s, cap){
     const L = len(); let n = 1;
@@ -1366,9 +1398,9 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
       const arr = state.cells[lane.id], v = arr[s];
       if (v < 0) continue;
       let dur = sd, vel = 1;
-      const cap = HOLD[lane.id] && HOLD[lane.id][state.sounds[lane.id]];
-      if (cap) dur = stepsUntilNext(arr, s, cap) * sd * (DETACHED.has(lane.id) ? 0.92 : 1);
-      if (lane.id === 'hat') vel = s % 4 === 0 ? 1 : s % 2 === 0 ? 0.75 : 0.55;
+      const cap = HOLD[lane.type] && HOLD[lane.type][state.sounds[lane.id]];
+      if (cap) dur = stepsUntilNext(arr, s, cap) * sd * (DETACHED.has(lane.type) ? 0.92 : 1);
+      if (lane.type === 'hat') vel = s % 4 === 0 ? 1 : s % 2 === 0 ? 0.75 : 0.55;
       trigger(lane, v, t, dur, vel);
     }
   }
@@ -1460,7 +1492,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
       lab.type = 'button'; lab.className = 'lab'; lab.dataset.lane = lane.id;
       lab.setAttribute('aria-haspopup', 'dialog'); lab.setAttribute('aria-expanded', 'false');
       lab.style.setProperty('--lc', color);
-      lab.innerHTML = `<span class="sw"></span><span class="txt"><span class="name">${lane.name}</span><span class="snd-name"></span></span>`;
+      lab.innerHTML = `<span class="sw${lane.num ? ' num' : ''}">${lane.num || ''}</span><span class="txt"><span class="name">${lane.label || lane.name}</span><span class="snd-name"></span></span>`;
       labEls[lane.id] = lab; frag.appendChild(lab);
       cellEls[lane.id] = [];
       for (let s = 0; s < L; s++){
@@ -1537,7 +1569,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     const c = e.target.closest('.cell');
     if (!c || e.button > 0) return;
     ensureAudio();
-    const lane = BY[c.dataset.lane], s = +c.dataset.step, v = state.cells[lane.id][s];
+    const lane = laneOf(c.dataset.lane), s = +c.dataset.step, v = state.cells[lane.id][s];
     const mouse = e.pointerType === 'mouse';
     drag = { lane, s, last:s, y:e.clientY, v, mouse, id:e.pointerId, mode:null };
     setFocus(LANES.indexOf(lane), s, false);
@@ -1586,14 +1618,14 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     const lab = e.target.closest('.lab');
     if (lab && suppressClick){ suppressClick = false; return; }
     if (lab){
-      const lane = BY[lab.dataset.lane];
+      const lane = laneOf(lab.dataset.lane);
       if (popLane === lane) closePop(false); else openPop(lane);
       return;
     }
     const c = e.target.closest('.cell');
     if (c && e.detail === 0){ // keyboard activation
       ensureAudio();
-      const lane = BY[c.dataset.lane], s = +c.dataset.step;
+      const lane = laneOf(c.dataset.lane), s = +c.dataset.step;
       if (state.cells[lane.id][s] < 0) place(lane, s); else setCell(lane, s, -1);
     }
   });
@@ -1601,13 +1633,13 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     const lab = e.target.closest('.lab');
     if (lab && e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')){
       e.preventDefault();
-      const lane = BY[lab.dataset.lane], from = state.order.indexOf(lane.id);
+      const lane = laneOf(lab.dataset.lane), from = state.order.indexOf(lane.id);
       moveTrack(lane, clamp(from + (e.key === 'ArrowUp' ? -1 : 1), 0, state.order.length - 1));
       return;
     }
     const c = e.target.closest('.cell');
     if (!c) return;
-    const lane = BY[c.dataset.lane], li = LANES.indexOf(lane), s = +c.dataset.step, L = len();
+    const lane = laneOf(c.dataset.lane), li = LANES.indexOf(lane), s = +c.dataset.step, L = len();
     const v = state.cells[lane.id][s];
     if (e.shiftKey && lane.mel && v >= 0 && (e.key === 'ArrowUp' || e.key === 'ArrowDown')){
       e.preventDefault();
@@ -1684,7 +1716,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
   grid.addEventListener('pointerdown', e => {
     const lab = e.target.closest('.lab');
     if (!lab || e.button > 0) return;
-    mover = { lane:BY[lab.dataset.lane], lab, id:e.pointerId, sx:e.clientX, sy:e.clientY, y:e.clientY, mouse:e.pointerType === 'mouse', active:false };
+    mover = { lane:laneOf(lab.dataset.lane), lab, id:e.pointerId, sx:e.clientX, sy:e.clientY, y:e.clientY, mouse:e.pointerType === 'mouse', active:false };
     if (!mover.mouse) mover.timer = setTimeout(startMove, 320);
   });
   grid.addEventListener('pointermove', e => {
@@ -1796,7 +1828,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
   window.addEventListener('scroll', () => closePop(false), { passive:true });
 
   /* ---------- add a track ---------- */
-  const picker = $('picker'), pickerBody = $('pickerBody');
+  const picker = $('picker'), pickerBody = $('pickerBody'), pickerDetail = $('pickerDetail'), pickerTitle = $('pickerTitle'), pickerBack = $('pickerBack');
   ['Drums & percussion', 'Bass', 'Keys & strings', 'Synths', 'Brass, wind & voices', 'Fun & FX'].forEach(cat => {
     const h = document.createElement('h3'); h.className = 'picker-cat'; h.textContent = cat;
     const wrap = document.createElement('div'); wrap.className = 'picker-grid';
@@ -1804,7 +1836,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'pick'; b.dataset.type = t.id;
       b.style.setProperty('--lc', laneColor(t));
-      b.innerHTML = `<span class="pick-name">${t.name}</span><span class="pick-snds">${t.sounds.map(x => x[1]).join(' · ')}</span><span class="pick-added">Added</span>`;
+      b.innerHTML = `<span class="pick-name">${t.name}</span><span class="pick-snds">${t.sounds.map(x => x[1]).join(' · ')}</span><span class="pick-added"></span>`;
       wrap.appendChild(b);
     });
     pickerBody.append(h, wrap);
@@ -1812,33 +1844,79 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
   function openPicker(){
     closePop(false);
     pickerBody.querySelectorAll('.pick').forEach(b => {
-      const on = state.order.includes(b.dataset.type);
-      b.disabled = on; b.classList.toggle('added', on);
+      const have = LANES.filter(l => l.type === b.dataset.type).length;
+      b.classList.toggle('added', have > 0);
+      b.querySelector('.pick-added').textContent = have > 1 ? `On your timeline ×${have}` : 'On your timeline';
     });
+    listScroll = 0; showList();
     if (picker.showModal) picker.showModal(); else picker.setAttribute('open', '');
   }
   function closePicker(){ if (picker.close) picker.close(); else picker.removeAttribute('open'); }
+  // the catalogue, and a page per instrument where each sound can be heard before adding it
+  let pickType = null, pickSound = null, listScroll = 0;
+  const nextTrackId = type => { let id = type, n = 1; while (state.order.includes(id)) id = `${type}-${++n}`; return id; };
+  function showList(){
+    pickType = null; pickerTitle.textContent = 'Add a track';
+    pickerBack.hidden = pickerDetail.hidden = true; pickerBody.hidden = false;
+    pickerBody.scrollTop = listScroll;
+  }
+  function showDetail(type){
+    listScroll = pickerBody.scrollTop;
+    pickType = type; pickSound = type.sounds[0][0];
+    const have = LANES.filter(l => l.type === type.id).length, next = laneOf(nextTrackId(type.id)).name;
+    picker.style.setProperty('--lc', laneColor(type));
+    pickerTitle.textContent = type.name;
+    pickerDetail.innerHTML = `<p class="pd-help">Tap a sound to hear it, then add the one you like.</p>
+      <div class="pd-sounds" role="group" aria-label="${type.name} sounds">${type.sounds.map(([id, nm]) =>
+        `<button type="button" class="pd-snd" data-snd="${id}" aria-pressed="${id === pickSound}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>${nm}</button>`).join('')}</div>
+      ${have ? `<p class="pd-note">${type.name} is already on your timeline${have > 1 ? ` ${have} times` : ''}, so this adds ${next}.</p>` : ''}
+      <button type="button" class="pd-add">Add ${next}</button>`;
+    pickerBody.hidden = true; pickerDetail.hidden = pickerBack.hidden = false;
+    pickerDetail.scrollTop = 0;
+    pickerDetail.querySelector('.pd-snd').focus({ preventScroll:true });
+  }
   pickerBody.addEventListener('click', e => {
     const b = e.target.closest('.pick');
-    if (!b || b.disabled) return;
-    closePicker(); addTrack(b.dataset.type);
+    if (b) showDetail(BY[b.dataset.type]);
   });
+  pickerDetail.addEventListener('click', e => {
+    const sb = e.target.closest('.pd-snd');
+    if (sb){
+      pickSound = sb.dataset.snd;
+      pickerDetail.querySelectorAll('.pd-snd').forEach(x => x.setAttribute('aria-pressed', x === sb));
+      audition(pickType, pickSound);
+      return;
+    }
+    if (e.target.closest('.pd-add')){
+      const type = pickType, snd = pickSound;
+      closePicker(); addTrack(type.id, snd);
+    }
+  });
+  pickerBack.addEventListener('click', showList);
   $('pickerClose').addEventListener('click', closePicker);
   picker.addEventListener('click', e => { if (e.target === picker) closePicker(); }); // tap outside the panel
-  function addTrack(id){
-    if (state.order.includes(id)) return;
+  function addTrack(type, snd){
+    let id = type, n = 1;
+    while (state.order.includes(id)) id = `${type}-${++n}`;
+    const lane = laneOf(id);
+    if (!state.cells[id]) state.cells[id] = new Array(MAX).fill(-1);
+    state.sounds[id] = snd || lane.sounds[0][0];
     state.order.push(id);
     setLanes(); buildGrid(); fitGrid(); save();
-    const lane = BY[id], lab = labEls[id];
+    const lab = labEls[id];
     lab.scrollIntoView({ block:'nearest', behavior:reduceMotion.matches ? 'auto' : 'smooth' });
     lab.focus({ preventScroll:true });
     ensureAudio(); preview(lane, placeDeg(lane));
   }
+  function forgetTrack(id){
+    const lane = laneOf(id);
+    delete state.muted[id]; delete lastDeg[id];
+    if (lane.num){ delete state.cells[id]; delete state.sounds[id]; }
+    else { state.cells[id].fill(-1); state.sounds[id] = lane.sounds[0][0]; }
+  }
   function removeTrack(lane){
     state.order = state.order.filter(id => id !== lane.id);
-    state.cells[lane.id].fill(-1);
-    state.sounds[lane.id] = lane.sounds[0][0];
-    delete state.muted[lane.id];
+    forgetTrack(lane.id);
     setLanes(); buildGrid(); fitGrid(); save();
     $('addTrack').focus({ preventScroll:true });
   }
@@ -1882,7 +1960,8 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     state.sounds = Object.assign(defaultSounds(), p.s || {});
     Object.keys(p.p).forEach(id => { if (!state.order.includes(id)) state.order.push(id); });
     setLanes();
-    TYPES.forEach(l => {
+    LANES.forEach(l => { if (!state.sounds[l.id]) state.sounds[l.id] = l.sounds[0][0]; });
+    [...new Set(TYPES.concat(LANES))].forEach(l => {
       const str = p.p[l.id] || '';
       state.cells[l.id] = Array.from({ length:MAX }, (_, i) => str ? parseCh(str[i % str.length]) : -1);
     });
@@ -1932,7 +2011,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
       chord: () => pick([0,2,3,4,1]),
     };
     // keep it from getting muddy: one or two melody lines, usually one low end
-    const has = id => state.order.includes(id);
+    const has = type => LANES.some(l => l.type === type);
     const active = new Set(['kick', 'snare', 'hat']);
     const MELODY = ['lead', 'keys', 'pluck', 'vox'].filter(has);
     const tops = MELODY.filter(() => Math.random() < .4);
@@ -1942,13 +2021,13 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     const want = (r < .45 ? ['bass'] : r < .65 ? ['low'] : r < .9 ? ['mega'] : ['bass', 'low']).filter(has);
     (want.length ? want : lows.length ? [pick(lows)] : []).forEach(id => active.add(id));
     ['chord', 'ohat', 'perc', 'clap', 'tom'].forEach(id => { if (Math.random() < .55) active.add(id); });
-    LANES.filter(l => l.role).forEach(l => { if (Math.random() < .5) active.add(l.id); });
+    LANES.filter(l => l.role).forEach(l => { if (Math.random() < .5) active.add(l.type); });
 
     const L = len();
     LANES.forEach(l => {
       const arr = new Array(MAX).fill(-1);
-      if (active.has(l.id)){
-        const role = ROLE[l.role] || {}, p = prob[l.id] || role.p, d = deg[l.id] || role.d;
+      if (active.has(l.type)){
+        const role = ROLE[l.role] || {}, p = prob[l.type] || role.p, d = deg[l.type] || role.d;
         const gen = s => Math.random() < p(s) ? (l.mel ? d() : 0) : -1;
         const bar = Array.from({ length:16 }, (_, s) => gen(s));
         for (let i = 0; i < L; i++) arr[i] = bar[i % 16];
@@ -1975,7 +2054,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
       return;
     }
     if (Date.now() - clearedAt < 700) return; // a double tap on Clear shouldn't also remove every track
-    state.order.forEach(id => { state.sounds[id] = BY[id].sounds[0][0]; delete state.muted[id]; });
+    state.order.forEach(forgetTrack);
     state.order = [];
     setLanes(); buildGrid(); fitGrid(); save();
     $('addTrack').focus({ preventScroll:true });
