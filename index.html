@@ -74,6 +74,9 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
 .actions{display:flex;gap:8px;margin-left:auto}
 .btn{font:inherit;font-size:14px;font-weight:500;height:34px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:9px;padding:0 14px;cursor:pointer}
 .btn:hover,.seg button:hover,select:hover{border-color:var(--muted)}
+.btn.danger{color:var(--c-kick)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:disabled:hover{border-color:var(--line)}
 
 .stage{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 0 8px;overflow:hidden}
 .scroller{overflow-x:auto;overscroll-behavior-x:contain;padding:0 10px 6px 0;scrollbar-width:thin}
@@ -146,6 +149,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
 .add-btn svg{width:22px;height:22px;padding:4px;border-radius:50%;background:var(--ink);fill:none;stroke:var(--bg);stroke-width:3;stroke-linecap:round}
 .add-btn:hover{border-style:solid}
 .add-btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.empty-note{position:sticky;left:170px;margin-left:12px;font-size:13px;color:var(--muted)}
 
 .picker{width:min(780px, calc(100vw - 24px));max-height:min(88vh, 940px);margin:auto;padding:0;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);box-shadow:0 24px 64px rgba(10,16,24,.35)}
 .picker[open]{display:flex;flex-direction:column}
@@ -465,6 +469,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
   /* ---------- storage ---------- */
   let saveT;
   function save(){
+    updateClearBtn();
     clearTimeout(saveT);
     saveT = setTimeout(() => {
       try {
@@ -1472,6 +1477,11 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     addRow.className = 'add-row';
     addRow.innerHTML = '<button class="add-btn" type="button" id="addTrack" aria-haspopup="dialog">'
       + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add track</button>';
+    if (!LANES.length){
+      const note = document.createElement('span');
+      note.className = 'empty-note'; note.textContent = 'No tracks yet. Add one, or load a starter loop.';
+      addRow.appendChild(note);
+    }
     frag.appendChild(addRow);
     grid.appendChild(frag);
     LANES.forEach(renderLane);
@@ -1949,9 +1959,26 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     LANES.forEach(renderLane); save();
   }
   $('random').addEventListener('click', () => { ensureAudio(); randomLoop(); });
+  // Clear empties the tracks; once they are all empty it offers to remove them instead
+  const hasNotes = () => LANES.some(l => state.cells[l.id].some(v => v >= 0));
+  let clearedAt = 0;
+  function updateClearBtn(){
+    const b = $('clear'), removeAll = LANES.length > 0 && !hasNotes();
+    b.textContent = removeAll ? 'Remove all tracks' : 'Clear';
+    b.classList.toggle('danger', removeAll);
+    b.disabled = !LANES.length;
+  }
   $('clear').addEventListener('click', () => {
-    LANES.forEach(l => state.cells[l.id].fill(-1));
-    LANES.forEach(renderLane); save();
+    if (hasNotes()){
+      LANES.forEach(l => state.cells[l.id].fill(-1));
+      LANES.forEach(renderLane); clearedAt = Date.now(); save();
+      return;
+    }
+    if (Date.now() - clearedAt < 700) return; // a double tap on Clear shouldn't also remove every track
+    state.order.forEach(id => { state.sounds[id] = BY[id].sounds[0][0]; delete state.muted[id]; });
+    state.order = [];
+    setLanes(); buildGrid(); fitGrid(); save();
+    $('addTrack').focus({ preventScroll:true });
   });
 
   $('play').addEventListener('click', () => state.playing ? stop() : start());
@@ -2025,6 +2052,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
   /* ---------- boot ---------- */
   if (restore()){ syncControls(); buildGrid(); }
   else loadPreset(PRESETS[0]);
+  updateClearBtn();
   updateAppMode();
 })();
 </script>
