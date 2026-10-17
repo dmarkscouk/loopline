@@ -182,6 +182,28 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
 .pick-added{display:none;margin-top:2px;font-size:11.5px;font-weight:600;color:var(--ink)}
 .pick.added .pick-added{display:block}
 
+.loops-body{overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:10px;padding:14px 18px 20px}
+.lp-label{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.lp-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.lp-name{flex:1;min-width:170px;height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px}
+.lp-primary{height:44px;padding:0 22px;border:0;border-radius:999px;background:var(--ink);color:var(--bg);font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.lp-status{min-height:1.4em;margin:0;font-size:13px;color:var(--muted)}
+.lp-tools{display:flex;flex-wrap:wrap;gap:8px}
+.lp-tools .btn[hidden],.lp-link[hidden],.lp-row .btn[hidden],.lp-empty[hidden]{display:none}
+.lp-link{width:100%;height:38px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--muted);font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace}
+.lp-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.lp-item{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.lp-item.current{border-color:var(--ink)}
+.lp-info{flex:1;min-width:150px}
+.lp-title{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lp-title input{width:100%;height:34px;padding:0 8px;border:1px solid var(--muted);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit}
+.lp-meta{margin-top:2px;font-size:12px;color:var(--muted)}
+.lp-btns{display:flex;gap:6px}
+.lp-empty{margin:0;font-size:13.5px;color:var(--muted)}
+.lp-name:focus-visible,.lp-primary:focus-visible,.lp-title input:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.toast{position:fixed;z-index:50;left:50%;bottom:calc(20px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);max-width:calc(100vw - 32px);padding:10px 16px;border-radius:999px;background:var(--ink);color:var(--bg);font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(10,16,24,.3)}
+.toast[hidden]{display:none}
+
 .hint{margin:12px 4px 0;max-width:72ch;font-size:13px;color:var(--muted)}
 
 @media (max-width:700px){
@@ -239,6 +261,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
       <select id="preset"><option value="">Load a loop…</option></select>
     </label>
     <div class="actions">
+      <button class="btn" type="button" id="myLoops" aria-haspopup="dialog">My loops</button>
       <button class="btn" type="button" id="random">Random loop</button>
       <button class="btn" type="button" id="clear">Clear</button>
     </div>
@@ -248,7 +271,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     <div class="scroller"><div class="grid" id="grid" role="group" aria-label="Sound timeline"></div></div>
   </section>
 
-  <p class="hint">Tap a square to place a sound and tap it again to remove it. On tracks that show note names, drag a placed block up or down to change its note. Tap a track name to choose its sound, mute, clear or remove it; hold the name and drag to move the track. Tap Add track under the timeline for more instruments: you can try each sound before adding it, and add the same one more than once. The space bar plays and stops.</p>
+  <p class="hint">Tap a square to place a sound and tap it again to remove it. On tracks that show note names, drag a placed block up or down to change its note. Tap a track name to choose its sound, mute, clear or remove it; hold the name and drag to move the track. Tap Add track under the timeline for more instruments: you can try each sound before adding it, and add the same one more than once. My loops saves your loop on this device, shares it as a link, or downloads it as audio. The space bar plays and stops.</p>
 </main>
 
 <div class="pop" id="pop" role="dialog" aria-labelledby="popTitle" hidden>
@@ -274,6 +297,38 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
   <div class="picker-body" id="pickerBody"></div>
   <div class="picker-detail" id="pickerDetail" hidden></div>
 </dialog>
+
+<dialog class="picker" id="loops" aria-labelledby="loopsTitle">
+  <div class="picker-head">
+    <h2 id="loopsTitle">My loops</h2>
+    <button class="picker-close" type="button" id="loopsClose" aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="loops-body">
+    <label class="lp-label" for="loopName">This loop</label>
+    <div class="lp-row">
+      <input class="lp-name" id="loopName" maxlength="40" autocomplete="off" enterkeyhint="done" placeholder="Give it a name">
+      <button class="lp-primary" type="button" id="loopSave">Save</button>
+      <button class="btn" type="button" id="loopSaveCopy" hidden>Save a copy</button>
+    </div>
+    <p class="lp-status" id="loopStatus" role="status" aria-live="polite"></p>
+    <div class="lp-tools">
+      <button class="btn" type="button" id="loopCopy">Copy link</button>
+      <button class="btn" type="button" id="loopShare" hidden>Share…</button>
+      <button class="btn" type="button" id="loopWav">Download audio</button>
+      <button class="btn" type="button" id="loopExport">Export file</button>
+      <button class="btn" type="button" id="loopImport">Open a file</button>
+      <input type="file" id="loopFile" accept=".json,application/json" hidden>
+    </div>
+    <input class="lp-link" id="loopLink" readonly hidden aria-label="Link to this loop">
+    <h3 class="picker-cat">Saved on this device</h3>
+    <ul class="lp-list" id="loopList"></ul>
+    <p class="lp-empty" id="loopEmpty">Nothing saved yet. Give your loop a name and tap Save.</p>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script>
 (() => {
@@ -469,7 +524,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
   const defaultSounds = () => Object.fromEntries(TYPES.map(l => [l.id, l.sounds[0][0]]));
   const state = {
     tempo:96, swing:0, key:9, scale:'minpent', bars:2,
-    cells:{}, sounds:defaultSounds(), muted:{}, order:CORE.map(l => l.id), playing:false,
+    cells:{}, sounds:defaultSounds(), muted:{}, order:CORE.map(l => l.id), loopName:'', loopId:null, playing:false,
   };
   const lastDeg = {};
   TYPES.forEach(l => { state.cells[l.id] = new Array(MAX).fill(-1); });
@@ -500,7 +555,8 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
       try {
         localStorage.setItem(STORE, JSON.stringify({
           tempo:state.tempo, swing:state.swing, key:state.key, scale:state.scale, bars:state.bars,
-          cells:state.cells, sounds:state.sounds, muted:state.muted, order:state.order
+          cells:state.cells, sounds:state.sounds, muted:state.muted, order:state.order,
+          loopName:state.loopName, loopId:state.loopId
         }));
       } catch (e) {}
     }, 250);
@@ -526,6 +582,8 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
         state.sounds[l.id] = l.sounds.some(s => s[0] === snd[l.id]) ? snd[l.id] : l.sounds[0][0];
       });
       state.muted = d.muted && typeof d.muted === 'object' ? d.muted : {};
+      state.loopName = typeof d.loopName === 'string' ? d.loopName.slice(0, 40) : '';
+      state.loopId = typeof d.loopId === 'string' ? d.loopId : null;
       setLanes();
       return true;
     } catch (e) { return false; }
@@ -538,6 +596,11 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     ctx = new AC();
+    buildGraph();
+    const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, 22050); s.connect(ctx.destination); s.start(0);
+  }
+  // master bus, delay and noise source on whatever context ctx is
+  function buildGraph(){
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -14; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.2;
     // then a limiter, and a soft clipper that leaves everything below -2 dBFS untouched,
@@ -565,8 +628,6 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const ch = noiseBuf.getChannelData(0);
     for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
-
-    const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, 22050); s.connect(ctx.destination); s.start(0);
   }
   function updateDelay(){
     if (delay) delay.delayTime.setTargetAtTime(0.75 * 60 / state.tempo, ctx.currentTime, 0.05);
@@ -648,8 +709,7 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     const g = ad(G(), t, peak, 0.002, dec); c.connect(g); out(g, send);
   }
   // an LFO shape that starts at its lowest point, so wobbles open up from closed
-  let closedWave = null;
-  const closedSine = () => closedWave || (closedWave = ctx.createPeriodicWave(new Float32Array([0, -1]), new Float32Array([0, 0])));
+  const closedSine = () => ctx.closedWave || (ctx.closedWave = ctx.createPeriodicWave(new Float32Array([0, -1]), new Float32Array([0, 0])));
   // clean sine underneath the mega basses, for weight on headphones and big speakers
   function subLayer(t, f, dur, peak){
     const o = osc('sine', f, t, t + dur + 0.15), g = hold(G(), t, peak, 0.008, dur, 0.06);
@@ -997,15 +1057,14 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
   const lastHz = {};
   function glideFrom(key, f){ const from = lastHz[key] || f; lastHz[key] = f; return from; }
   // NES-style thin pulse wave (12.5% duty)
-  let pulseCache = null;
   function pulseWave(){
-    if (pulseCache) return pulseCache;
+    if (ctx.pulseWave) return ctx.pulseWave;
     const N = 64, re = new Float32Array(N), im = new Float32Array(N), d = 0.125;
     for (let n = 1; n < N; n++){
       re[n] = Math.sin(2 * Math.PI * n * d) / (n * Math.PI);
       im[n] = 2 * Math.sin(Math.PI * n * d) ** 2 / (n * Math.PI);
     }
-    return (pulseCache = ctx.createPeriodicWave(re, im));
+    return (ctx.pulseWave = ctx.createPeriodicWave(re, im));
   }
   // bowed string section; trem is a tremolo rate in Hz (0 for none)
   function bowed(t, freqs, dur, att, trem){
@@ -1970,6 +2029,8 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
   presetSel.addEventListener('change', () => {
     if (presetSel.value === '') return;
     loadPreset(PRESETS[+presetSel.value]);
+    state.loopName = ''; state.loopId = null; save();
+    cleanSnap = snapText(); // starter loops can always be loaded again, so no need to keep them
     presetSel.value = '';
   });
 
@@ -2068,6 +2129,239 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
     state.playing ? stop() : start();
   });
 
+  /* ---------- my loops: save on this device, share as a link, files and audio ---------- */
+  const SAVES = 'loopline-saves';
+  const loopsDlg = $('loops'), loopName = $('loopName'), loopStatus = $('loopStatus'), loopList = $('loopList'), loopLink = $('loopLink');
+  const readSaves = () => { try { const a = JSON.parse(localStorage.getItem(SAVES) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
+  const writeSaves = list => { try { localStorage.setItem(SAVES, JSON.stringify(list)); return true; } catch (e) { return false; } };
+  const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const say = msg => { loopStatus.textContent = msg; };
+  let toastT;
+  function toast(msg){
+    const t = $('toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200);
+  }
+
+  // A loop as plain data: settings, plus each track's id, sound, mute and notes as a short string
+  // ('.' for empty, 0-9 and a-e for notes), the same as the starter loops use.
+  function snapshot(){
+    return { v:1, name:state.loopName || '', tempo:state.tempo, swing:state.swing, key:state.key, scale:state.scale, bars:state.bars,
+      tracks:state.order.map(id => [id, state.sounds[id], state.muted[id] ? 1 : 0,
+        state.cells[id].map(v => v < 0 ? '.' : v.toString(15)).join('').replace(/\.+$/, '')]) };
+  }
+  const snapText = (d = snapshot()) => JSON.stringify(Object.assign({}, d, { name:'' })); // the music, ignoring the name
+  function applySnapshot(d){
+    if (!d || !Array.isArray(d.tracks)) throw new Error('not a loop');
+    state.tempo = clamp(+d.tempo || 96, 60, 180);
+    state.swing = clamp(+d.swing || 0, 0, 100);
+    state.key = clamp(+d.key || 0, 0, 11);
+    state.scale = SCALES[d.scale] ? d.scale : 'minpent';
+    state.bars = [1, 2, 4].includes(d.bars) ? d.bars : 2;
+    const tracks = d.tracks.filter(t => Array.isArray(t) && laneOf(t[0]));
+    state.order.forEach(forgetTrack);
+    state.order = [...new Set(tracks.map(t => t[0]))];
+    tracks.forEach(([id, snd, mute, pat]) => {
+      const lane = laneOf(id), str = typeof pat === 'string' ? pat : '';
+      state.cells[id] = Array.from({ length:MAX }, (_, i) => i < str.length ? parseCh(str[i]) : -1);
+      state.sounds[id] = lane.sounds.some(x => x[0] === snd) ? snd : lane.sounds[0][0];
+      if (mute) state.muted[id] = true; else delete state.muted[id];
+    });
+    state.loopName = typeof d.name === 'string' ? d.name.slice(0, 40) : '';
+    setLanes(); syncControls(); updateDelay(); buildGrid(); fitGrid(); save();
+    cleanSnap = snapText();
+  }
+
+  // Before something else replaces the loop on screen, keep it in My loops unless it's empty,
+  // a starter loop as loaded, or already saved exactly as it is.
+  let cleanSnap = '';
+  function keepCurrent(){
+    const now = snapText();
+    if (!hasNotes() || now === cleanSnap || readSaves().some(x => snapText(x.data) === now)) return;
+    const list = readSaves(), when = new Date().toLocaleString(undefined, { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+    list.unshift({ id:newId(), name:`${state.loopName || 'Unsaved loop'} (kept ${when})`, at:Date.now(), data:snapshot() });
+    writeSaves(list);
+  }
+
+  function defaultName(){
+    const names = new Set(readSaves().map(x => x.name));
+    let n = 1; while (names.has(`My loop ${n}`)) n++;
+    return `My loop ${n}`;
+  }
+  function saveLoop(copy){
+    let name = (loopName.value.trim() || defaultName()).slice(0, 40);
+    const list = readSaves();
+    let item = !copy && state.loopId && list.find(x => x.id === state.loopId);
+    if (copy && name === state.loopName) name = `${name} copy`.slice(0, 40);
+    state.loopName = name;
+    if (item){ list.splice(list.indexOf(item), 1); Object.assign(item, { name, at:Date.now(), data:snapshot() }); }
+    else { item = { id:newId(), name, at:Date.now(), data:snapshot() }; state.loopId = item.id; }
+    list.unshift(item);
+    if (!writeSaves(list)){ say("Couldn't save: this browser isn't letting Loopline store anything."); return; }
+    loopName.value = name; cleanSnap = snapText(); save();
+    renderLoops(); say(copy ? `Saved a copy called “${name}”.` : `Saved “${name}”.`);
+  }
+  function openSaved(item){
+    keepCurrent();
+    applySnapshot(item.data);
+    state.loopId = item.id; state.loopName = item.name; save();
+    closeLoops(); toast(`Opened “${item.name}”`);
+  }
+
+  function renderLoops(){
+    const list = readSaves();
+    loopList.replaceChildren(...list.map(item => {
+      const li = document.createElement('li'), d = item.data || {}, n = (d.tracks || []).length;
+      li.className = 'lp-item' + (item.id === state.loopId ? ' current' : ''); li.dataset.id = item.id;
+      const info = document.createElement('div'), title = document.createElement('div'), meta = document.createElement('div'), btns = document.createElement('div');
+      info.className = 'lp-info'; title.className = 'lp-title'; meta.className = 'lp-meta'; btns.className = 'lp-btns';
+      title.textContent = item.name;
+      meta.textContent = `${n} track${n === 1 ? '' : 's'} · ${d.bars || 2} bar${d.bars === 1 ? '' : 's'} · ${d.tempo || 96} BPM · `
+        + new Date(item.at).toLocaleDateString(undefined, { day:'numeric', month:'short' });
+      [['open', 'Open'], ['rename', 'Rename'], ['delete', 'Delete']].forEach(([act, label]) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.dataset.act = act; b.textContent = label; btns.appendChild(b);
+      });
+      info.append(title, meta); li.append(info, btns);
+      return li;
+    }));
+    $('loopEmpty').hidden = list.length > 0;
+    $('loopSaveCopy').hidden = !state.loopId || !list.some(x => x.id === state.loopId);
+  }
+  loopList.addEventListener('click', e => {
+    const b = e.target.closest('button'), li = e.target.closest('.lp-item');
+    if (!b || !li) return;
+    const list = readSaves(), item = list.find(x => x.id === li.dataset.id);
+    if (!item) return renderLoops();
+    if (b.dataset.act === 'open') openSaved(item);
+    else if (b.dataset.act === 'delete'){
+      if (!b.classList.contains('danger')){ b.classList.add('danger'); b.textContent = 'Delete?'; return; } // second tap deletes
+      writeSaves(list.filter(x => x !== item));
+      if (state.loopId === item.id){ state.loopId = null; save(); }
+      renderLoops(); say(`Deleted “${item.name}”.`);
+    } else if (b.dataset.act === 'rename'){
+      const title = li.querySelector('.lp-title'), input = title.querySelector('input');
+      if (input){
+        item.name = (input.value.trim() || item.name).slice(0, 40);
+        writeSaves(list);
+        if (state.loopId === item.id){ state.loopName = item.name; loopName.value = item.name; save(); }
+        renderLoops(); return;
+      }
+      const field = document.createElement('input'); field.value = item.name; field.maxLength = 40; field.setAttribute('aria-label', 'New name');
+      field.addEventListener('keydown', k => { if (k.key === 'Enter'){ k.preventDefault(); b.click(); } });
+      title.replaceChildren(field); b.textContent = 'Done'; field.focus(); field.select();
+    }
+  });
+
+  // share links: the loop, compressed, rides in the address after #loop=
+  const b64url = u8 => { let s = ''; u8.forEach(c => { s += String.fromCharCode(c); }); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const unb64url = str => Uint8Array.from(atob(str.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+  const pipe = async (bytes, stream) => new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
+  async function encodeLoop(){
+    const bytes = new TextEncoder().encode(JSON.stringify(snapshot()));
+    if (window.CompressionStream){ try { return 'z' + b64url(await pipe(bytes, new CompressionStream('deflate-raw'))); } catch (e) {} }
+    return 'j' + b64url(bytes);
+  }
+  async function decodeLoop(code){
+    let bytes = unb64url(code.slice(1));
+    if (code[0] === 'z') bytes = await pipe(bytes, new DecompressionStream('deflate-raw'));
+    else if (code[0] !== 'j') throw new Error('unknown link');
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+  const linkTo = code => `${location.origin}${location.pathname}#loop=${code}`;
+  async function openFromLink(){
+    const m = /[#&]loop=([A-Za-z0-9_-]+)/.exec(location.hash);
+    if (!m) return;
+    history.replaceState(null, '', location.pathname + location.search);
+    try {
+      const d = await decodeLoop(m[1]);
+      keepCurrent(); applySnapshot(d);
+      state.loopId = null; save();
+      toast(`Opened ${d.name ? `“${state.loopName}”` : 'a shared loop'}`);
+    } catch (e) { toast("That link doesn't have a loop in it that Loopline can open."); }
+  }
+  window.addEventListener('hashchange', openFromLink);
+
+  function download(blob, name){
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  }
+  const fileName = () => (state.loopName || loopName.value.trim() || 'loopline').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').toLowerCase() || 'loopline';
+
+  // audio: run the same engine on an offline context, a few times round the loop, then write a WAV
+  async function renderAudio(){
+    if (!hasNotes()) return say('Put some sounds on the timeline first.');
+    const sd = stepDur(), L = len(), reps = clamp(Math.ceil(16 / (L * sd)), 2, 8), SR = 44100;
+    const off = new OfflineAudioContext(1, Math.ceil((reps * L * sd + 2.5) * SR), SR);
+    const live = { ctx, master, delay, delaySend, noiseBuf };
+    ctx = off; buildGraph();
+    delay.delayTime.value = 0.75 * 60 / state.tempo;
+    for (let i = 0; i < reps * L; i++){
+      const s = i % L;
+      playStep(s, 0.05 + i * sd + (s % 2 ? (state.swing / 100) * sd / 3 : 0));
+    }
+    ({ ctx, master, delay, delaySend, noiseBuf } = live); // the live engine carries on untouched
+    const data = (await off.startRendering()).getChannelData(0), n = data.length, v = new DataView(new ArrayBuffer(44 + n * 2));
+    const str = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+    str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE'); str(12, 'fmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, SR, true);
+    v.setUint32(28, SR * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, n * 2, true);
+    for (let i = 0; i < n; i++){ const x = Math.max(-1, Math.min(1, data[i])); v.setInt16(44 + i * 2, x < 0 ? x * 0x8000 : x * 0x7fff, true); }
+    download(new Blob([v], { type:'audio/wav' }), `${fileName()}.wav`);
+    return true;
+  }
+
+  function openLoops(){
+    closePop(false);
+    loopName.value = state.loopName || defaultName();
+    $('loopShare').hidden = !navigator.share;
+    loopLink.hidden = true; say('');
+    renderLoops();
+    if (loopsDlg.showModal) loopsDlg.showModal(); else loopsDlg.setAttribute('open', '');
+  }
+  function closeLoops(){ if (loopsDlg.close) loopsDlg.close(); else loopsDlg.removeAttribute('open'); }
+  $('myLoops').addEventListener('click', openLoops);
+  $('loopsClose').addEventListener('click', closeLoops);
+  loopsDlg.addEventListener('click', e => { if (e.target === loopsDlg) closeLoops(); });
+  $('loopSave').addEventListener('click', () => saveLoop(false));
+  $('loopSaveCopy').addEventListener('click', () => saveLoop(true));
+  loopName.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); saveLoop(false); } });
+  $('loopCopy').addEventListener('click', async () => {
+    state.loopName = loopName.value.trim().slice(0, 40) || state.loopName; save();
+    const url = linkTo(await encodeLoop());
+    loopLink.value = url; loopLink.hidden = false;
+    try { await navigator.clipboard.writeText(url); say('Link copied. Whoever opens it gets this loop.'); }
+    catch (e) { loopLink.select(); say('Copy the link below to share this loop.'); }
+  });
+  $('loopShare').addEventListener('click', async () => {
+    state.loopName = loopName.value.trim().slice(0, 40) || state.loopName; save();
+    try { await navigator.share({ title:`${state.loopName || 'A loop'} · Loopline`, url:linkTo(await encodeLoop()) }); }
+    catch (e) { if (e.name !== 'AbortError') say("Sharing didn't work here. Try Copy link."); }
+  });
+  $('loopWav').addEventListener('click', async e => {
+    const b = e.currentTarget; b.disabled = true; say('Making the audio file…');
+    try { if (await renderAudio()) say(`Downloaded ${fileName()}.wav`); }
+    catch (err) { say("Couldn't make the audio file in this browser."); }
+    b.disabled = false;
+  });
+  $('loopExport').addEventListener('click', () => {
+    state.loopName = loopName.value.trim().slice(0, 40) || state.loopName; save();
+    download(new Blob([JSON.stringify(Object.assign({ app:'loopline' }, snapshot()))], { type:'application/json' }), `${fileName()}.loopline.json`);
+    say(`Downloaded ${fileName()}.loopline.json`);
+  });
+  $('loopImport').addEventListener('click', () => $('loopFile').click());
+  $('loopFile').addEventListener('change', async e => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    try {
+      const d = JSON.parse(await f.text());
+      keepCurrent(); applySnapshot(d);
+      state.loopId = null; save();
+      closeLoops(); toast(`Opened “${state.loopName || f.name}”. Save it to keep it in My loops.`);
+    } catch (err) { say("That file isn't a Loopline loop."); }
+  });
+
   /* ---------- app mode: full screen, wake lock, offline ---------- */
   const root = document.documentElement, fsBtn = $('fs');
   const appMQ = window.matchMedia('(display-mode: standalone), (display-mode: fullscreen)');
@@ -2130,9 +2424,10 @@ select{font:inherit;font-size:14px;color:var(--ink);height:34px;border:1px solid
 
   /* ---------- boot ---------- */
   if (restore()){ syncControls(); buildGrid(); }
-  else loadPreset(PRESETS[0]);
+  else { loadPreset(PRESETS[0]); cleanSnap = snapText(); } // a first visit's starter loop needn't be kept
   updateClearBtn();
   updateAppMode();
+  openFromLink();
 })();
 </script>
 </body>
